@@ -16,6 +16,7 @@ converts a .vox file to a minecraft structure file.
 const file = path.resolve(process.cwd(), process.argv[2]);
 const isFolder = fs.statSync(file).isDirectory();
 const config = require(path.resolve(process.cwd(), process.argv[3]));
+const Colors = Object.keys(config).filter(_=>_!=="_").map(item=>[toRgba(item),item]);
 let files = [];
 if (!isFolder) {
   files = [file];
@@ -30,6 +31,16 @@ const d = (v) => v.toString(16).padStart(2, "0");
 function toHex({ r, g, b, a }) {
   return d(r) + d(g) + d(b) + d(a);
 }
+function toRgba(hex){
+  const v = parseInt(hex,16);
+  return {
+    r:v>>24,
+    g:v>>16 & 255,
+    b:v>>8 & 255,
+    a:v & 255
+  }
+}
+const seenWarnings = new Set();
 for (let i = 0; i < files.length; i++) {
   try {
     let pallette = [];
@@ -89,11 +100,21 @@ for (let i = 0; i < files.length; i++) {
             type: "compound",
             value: data.XYZI.map((cube) => {
               const colorData = colors[cube.c];
-              if (!config[colorData]) {
-                console.log(`Error: color ${colorData} not found in config.`);
-                process.exit(1);
+              let blockData = config[colorData];
+
+              if (!blockData) {
+
+                if(!seenWarnings.has(colorData)){
+                  seenWarnings.add(colorData);
+                  console.log(`Warn: exact color ${colorData} not found in config.`);
+                }
+                const rgba = data.RGBA[cube.c];
+                const distances = Colors.map(([item])=>{
+                  return ((item.r-rgba.r)**2+(item.g-rgba.g)**2+(item.b+rgba.b)**2+(item.a+rgba.a)**2);
+                });
+                const color = Colors[distances.indexOf(Math.min(...distances))];
+                blockData = config[color[1]]
               }
-              const blockData = config[colorData];
 
               return createBlock([cube.x, cube.z,cube.y ], blockData);
             }),
