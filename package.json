@@ -1,0 +1,16 @@
+{
+  "name": "vox2nbt",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@bedrocker/mc-nbt": "^0.1.15",
+    "fs": "^0.0.1-security",
+    "parse-magica-voxel": "^2.0.0",
+    "path": "^0.12.7",
+    "zlib": "^1.0.5"
+  },
+  "bin": {
+    "vox2nbt": "./index.js"
+  }
+}
