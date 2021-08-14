@@ -110,17 +110,10 @@ for (let i = 0; i < files.length; i++) {
     };
     if(config._){
       console.log("filling default block");
-      const b = nbt.value.blocks.value.value
-      let idx = 0;
-      const total = data.SIZE.x * data.SIZE.y * data.SIZE.z;
+      const b = nbt.value.blocks.value.value;
       for(let x = 0;x<data.SIZE.x;x++){
         for(let y = 0;y<data.SIZE.y;y++){
           for(let z = 0;z<data.SIZE.z;z++){
-            idx++;
-            if(idx%100===0){
-              process.stdout.write(((idx/total)*100).toFixed(2)+"%")
-              process.stdout.cursorTo(0);
-            }
             if(b.find(block=>block.pos.value[0] === x && block.pos.value[1] === z && block.pos.value[2] === y)){
               b.push(createBlock(x,z,y,config._));
             }
