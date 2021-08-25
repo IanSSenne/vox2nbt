@@ -43,8 +43,14 @@ function toRgba(hex){
 const seenWarnings = new Set();
 for (let i = 0; i < files.length; i++) {
   try {
+    let p = files[i];
+    console.log('loading',p);
+    const data = pmv(fs.readFileSync(p));
+    let set = 0n;
+    const an = data.SIZE.x;
+    const bn = data.SIZE.z*an;
     let pallette = [];
-    function createBlock(pos, state) {
+    function createBlock(pos, state,track=false) {
       id = pallette.findIndex((item) => item.Name.value === state);
       if (id === -1) {
         id = pallette.length;
@@ -54,7 +60,9 @@ for (let i = 0; i < files.length; i++) {
             value: state,
           },
         });
+        // console.log(pallette.at(-1),id,pos);
       }
+      if(track)set = set | 1n<<BigInt(pos[0]+pos[1]*an+pos[2]*bn);
       return {
         pos: {
           type: "list",
@@ -69,8 +77,6 @@ for (let i = 0; i < files.length; i++) {
         },
       };
     }
-    let p = files[i];
-    const data = pmv(fs.readFileSync(p));
     const colors = data.RGBA.map(toHex);
     const nbt = {
       type: "compound",
@@ -99,9 +105,9 @@ for (let i = 0; i < files.length; i++) {
           value: {
             type: "compound",
             value: data.XYZI.map((cube) => {
-              const colorData = colors[cube.c];
+              const colorData = colors[cube.c-1];
               let blockData = config[colorData];
-
+              if(blockData === "minecraft:stone")debugger;
               if (!blockData) {
 
                 if(!seenWarnings.has(colorData)){
@@ -110,7 +116,7 @@ for (let i = 0; i < files.length; i++) {
                 }
                 const rgba = data.RGBA[cube.c];
                 const distances = Colors.map(([item])=>{
-                  return ((item.r-rgba.r)**2+(item.g-rgba.g)**2+(item.b+rgba.b)**2+(item.a+rgba.a)**2);
+                  return Math.sqrt((item.r-rgba.r)**2+(item.g-rgba.g)**2+(item.b+rgba.b)**2+(item.a+rgba.a)**2);
                 });
                 const color = Colors[distances.indexOf(Math.min(...distances))];
                 blockData = config[color[1]]
@@ -130,13 +136,20 @@ for (let i = 0; i < files.length; i++) {
       },
     };
     if(config._){
-      console.log("filling default block");
+      // fs.writeFileSync("./temp.txt",set.toString(2).length.toString());
+      const total = data.SIZE.x * data.SIZE.y * data.SIZE.z;
+      const percent = Math.floor(total/100);
+      console.log(`filling ${total} blocks with default`);
+      let proc = 0;
       const b = nbt.value.blocks.value.value;
       for(let x = 0;x<data.SIZE.x;x++){
         for(let y = 0;y<data.SIZE.y;y++){
           for(let z = 0;z<data.SIZE.z;z++){
-            if(b.find(block=>block.pos.value[0] === x && block.pos.value[1] === z && block.pos.value[2] === y)){
-              b.push(createBlock(x,z,y,config._));
+            const index = x + y * an + z * bn;
+            proc++;
+            if(proc%percent === 0)console.log((proc/percent).toFixed(2)+"%");
+            if(set & (1n<<BigInt(index))){
+              b.push(createBlock([x,z,y],config._,true));
             }
           }
         }
