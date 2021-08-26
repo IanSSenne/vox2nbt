@@ -6,7 +6,7 @@ const path = require("path");
 const zlib = require("zlib");
 const nbtlib = require("@bedrocker/mc-nbt");
 if (!process.argv[2]) {
-  console.log(`vox2nbt <file/directory> <config>
+  console.log(`vox2nbt <file/directory> <config> [output]
 
 converts a .vox file to a minecraft structure file.
 
@@ -14,6 +14,7 @@ converts a .vox file to a minecraft structure file.
   process.exit(0);
 }
 const file = path.resolve(process.cwd(), process.argv[2]);
+const output = (process.argv[4] || process.argv[2]).replace(".vox","");
 const isFolder = fs.statSync(file).isDirectory();
 const config = require(path.resolve(process.cwd(), process.argv[3]));
 const Colors = Object.keys(config).filter(_=>_!=="_").map(item=>[toRgba(item),item]);
@@ -155,7 +156,8 @@ for (let i = 0; i < files.length; i++) {
         }
       }
     }
-    fs.writeFileSync(p.replace(/\.vox$/g,"") + ".nbt", zlib.gzipSync(nbtlib.writeUncompressed(nbt)));
+    const temp = path.parse(p).name.replace(".vox","")+".nbt";
+    fs.writeFileSync(path.resolve(output,temp), zlib.gzipSync(nbtlib.writeUncompressed(nbt)));
   } catch (e) {
     console.log(`error converting file '${files[i]}'`);
     console.log(e);
